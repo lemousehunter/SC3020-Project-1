@@ -5,7 +5,7 @@
 2.  Make File
    ```bash
    make
-  ```
+   ```
 3. Run
    ```bash
    ./dbms
