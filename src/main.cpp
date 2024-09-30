@@ -151,7 +151,6 @@ int main() {
         std::cout << std::fixed << std::setprecision(6);
         std::cout << "\n======================= Task 3 ======================= " << std::endl;
         std::cout << "--------------- B+ Tree Search Results ---------------" << std::endl;
-        std::cout << "\nB+ Tree Search Results:" << std::endl;
         std::cout << "Number of index nodes accessed (internal, non-leaf node): " << result.indexNodesAccessed << std::endl;
         std::cout << "Number of data blocks accessed: " << result.dataBlocksAccessed << std::endl;
         std::cout << "Number of results: " << result.numberOfResults << std::endl;
