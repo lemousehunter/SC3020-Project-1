@@ -95,7 +95,7 @@ int main() {
     try {
         // Task 1: Storage component
         size_t num_of_records_per_datablock = 100;
-        Storage storage("data.txt", num_of_records_per_datablock, "datablocks");
+        Storage storage("games.txt", num_of_records_per_datablock, "datablocks");
 
         // Task 2: B+ tree indexing
         int order = 100; // Increased order for better performance
