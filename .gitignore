@@ -1,0 +1,7 @@
+*.o
+dbms
+index.dat
+obj
+bin
+/.idea
+datablocks
