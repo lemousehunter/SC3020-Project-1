@@ -1,7 +1,8 @@
 # Introduction
 This repository contains the codebase for a disk-based B+ tree index database system. The data is first read from games.txt (if datablocks does not exist) into the storage module, after which datablocks mirroring those of physical datablocks are created, each containing the pre-defined number of records. Following which, the B+ tree index is created if it does not exist. The range search query function allows users to search for records with `fgPctHome` that are between 0.5 to 0.8 (inclusive). Based on our own tests, the results should be as follows:
 
-```--------------- B+ Tree Search Results ---------------
+```
+--------------- B+ Tree Search Results ---------------
 Number of index nodes accessed (internal, non-leaf node): 2
 Number of data blocks accessed: 70
 Number of results: 6902
