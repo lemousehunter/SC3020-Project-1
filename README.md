@@ -16,7 +16,6 @@ Number of results: 6902
 Average FG3_PCT_home: 0.420801
 Running time: 53134 microseconds
 ------------------------------------------------------
-======================================================
 ```
 
 For the following B+ Tree:
