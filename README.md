@@ -42,6 +42,29 @@ Records per datablock (pre-defined): 100
 
 Initially, we faced some discrepancies with the timing (linear search being much faster than B+ tree search), which should not be the case. After some investigations, we found out that this was because of the extra time taken by the file `seekg()` and `read()` operations that B+ tree used but linear search did not, as our original implementation of linear search loaded the entire datablock into memory instead of reading it by offsets like B+ tree search was.
 
+# Pre-requsites:
+1. Ensure G++ compiler is installed
+
+   **For Windows:**<br>
+   https://ghost-together.medium.com/how-to-install-mingw-gcc-g-compiler-on-windows-f7c805747a00
+   
+   <br>**For Mac:**<br>
+
+   Via MacPorts:
+   ```bash
+   sudo port install gcc9
+   ```
+
+   Via Homebrew:
+   ```bash
+   brew install gcc
+   ```
+
+   <br>**For Linux:**<br>
+   ```bash
+   sudo apt-get update && sudo apt-get install g++
+   ```
+   
 # How to Run
 1. `cd` into the root directory of this git repository
 2. Make Clean
