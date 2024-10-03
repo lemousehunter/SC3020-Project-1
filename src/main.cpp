@@ -9,93 +9,52 @@
 #include "BPlusTree.h"
 #include <numeric>
 
-void averageResults(SearchResult &result) {
-    float totalFG3PctHome;
-    totalFG3PctHome = std::accumulate(result.found_records.begin(), result.found_records.end(), 0.0f,
-        [](float sum, const Record& record) {
-            return sum + record.fg3PctHome;
-        });
+void linearSearch(Storage& storage, float lower, float upper, SearchResult& result) {
+    const auto& recordLocations = storage.getRecordLocations();
+    std::unordered_map<uint32_t, std::vector<uint32_t>> datablockRecordIds;
+
+    for (const auto& pair : recordLocations) {
+        uint32_t recordId = pair.first;
+        uint32_t datablockId = pair.second.first;
         
-    if (result.numberOfResults > 0) {
-        result.avgFG3PctHome = totalFG3PctHome / result.numberOfResults;
-    } else {
-        result.avgFG3PctHome = 0;
-    }
-}
-
-void linearIndexer(std::unordered_map<int, std::vector<std::streampos>> &linearIndex, Storage &storage) {
-    size_t totalDatablocks = storage.getDatablockCount();
-    for (size_t datablockId = 0; datablockId < totalDatablocks; ++datablockId) {
-        std::string datablockFilename = storage.getDatablockFilename(datablockId);
-        std::ifstream datablockFile(datablockFilename, std::ios::binary);
-        if (!datablockFile.is_open()) {
-            throw std::runtime_error("Unable to open datablock file: " + datablockFilename);
+        Record record = storage.getRecord(recordId);
+        if (record.fgPctHome >= lower && record.fgPctHome <= upper) {
+            datablockRecordIds[datablockId].push_back(recordId);
+            result.numberOfResults++;
         }
-
-        // Compute file offsets for all lines
-        std::vector<std::streampos> lineOffsets;
-        lineOffsets.push_back(datablockFile.tellg());  // Start of file
-
-        Record record;
-        while (datablockFile.read(reinterpret_cast<char*>(&record), sizeof(Record))) {
-            lineOffsets.push_back(datablockFile.tellg());
-        }
-
-        linearIndex[datablockId] = lineOffsets;
-    }
-}
-
-
-// Function to perform linear search
-SearchResult linearSearch(const Storage& storage, float lower, float upper, std::unordered_map<int, std::vector<std::streampos>> &linearIndex) {
-    SearchResult result = {0, 0, 0.0f, 0};
-    std::set<int> accessedDatablocks;
-    size_t totalDatablocks = storage.getDatablockCount();
-
-    for (size_t datablockId = 0; datablockId < totalDatablocks; ++datablockId) {
-        std::string datablockFilename = storage.getDatablockFilename(datablockId);
-        std::ifstream datablockFile(datablockFilename, std::ios::binary);
-
-        if (!datablockFile.is_open()) {
-            throw std::runtime_error("Unable to open datablock file: " + datablockFilename);
-        }
-
-        // Reset file position to the beginning
-        datablockFile.clear();
-        datablockFile.seekg(0, std::ios::beg);
-
-        std::vector<std::streampos> lineOffsets = linearIndex[datablockId];
-
-        // Read each line based on file offset
-        for (size_t i = 0; i < lineOffsets.size() - 1; ++i) {
-            Record record;
-            datablockFile.seekg(lineOffsets[i]);
-            datablockFile.read(reinterpret_cast<char*>(&record), sizeof(Record));
-
-            if (record.fgPctHome >= lower && record.fgPctHome <= upper) {
-                result.numberOfResults++;
-
-                result.found_records.push_back(record);
-                
-                if (accessedDatablocks.find(datablockId) == accessedDatablocks.end()) {
-                    accessedDatablocks.insert(datablockId);
-                }
-            }
-        }
-
-        result.dataBlocksAccessed++;
-        datablockFile.close();
     }
 
+    result.dataBlocksAccessed = datablockRecordIds.size();
+    
+    std::vector<Record> resulting_records;
+    for (const auto& pair : datablockRecordIds) {
+        auto records = storage.bulkRead(pair.second);
+        resulting_records.insert(resulting_records.end(), records.begin(), records.end());
+    }
 
-    return result;
+    result.found_records = resulting_records;
+
+    if (!resulting_records.empty()) {
+        float totalFG3PctHome = 0.0f;
+        for (const auto& record : resulting_records) {
+            totalFG3PctHome += record.fg3PctHome;
+        }
+        result.avgFG3PctHome = totalFG3PctHome / resulting_records.size();
+    }
 }
 
 int main() {
     try {
         // Task 1: Storage component
-        size_t num_of_records_per_datablock = 100;
-        Storage storage("games.txt", num_of_records_per_datablock, "datablocks");
+        Storage storage("database.dat");
+
+        // Check if the database file exists
+        if (!std::filesystem::exists("database.dat")) {
+            std::cout << "Database file not found. Ingesting data..." << std::endl;
+            storage.ingestData("games.txt");
+        } else {
+            std::cout << "Database file found. Loading existing data..." << std::endl;
+        }
 
         // Task 2: B+ tree indexing
         int order = 100; // Increased order for better performance
@@ -122,22 +81,13 @@ int main() {
         auto result = bTree.rangeSearch(lower, upper, storage);
         auto end = std::chrono::high_resolution_clock::now();
         auto bpTreeDuration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        
-        // Calculate Average for B+ Tree Search Results
-        averageResults(result);
-
-        // Linear Index
-        std::unordered_map<int, std::vector<std::streampos>> linearIndex;
-        linearIndexer(linearIndex, storage);
 
         // Linear search
         start = std::chrono::high_resolution_clock::now();
-        auto linearResult = linearSearch(storage, lower, upper, linearIndex);
+        SearchResult linearResult = {0, 0, 0.0f, 0};
+        linearSearch(storage, lower, upper, linearResult);
         end = std::chrono::high_resolution_clock::now();
         auto linearDuration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-
-        // Calculate Average for Linear Search Results
-        averageResults(linearResult);
 
         // Task 1: Print Storage Statistics
         std::cout << "\n\n======================= Task 1 ====================== " << std::endl;

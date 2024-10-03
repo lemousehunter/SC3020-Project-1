@@ -3,58 +3,47 @@
 
 #include <string>
 #include <vector>
-#include <cstdint>
-#include <filesystem>
+#include <unordered_map>
+#include "Datablock.h"
 
 struct Record {
-    // Record attributes
-    int gameDate;       // 4 bytes
-    int teamId;         // 4 bytes
-    int ptsHome;        // 4 bytes
-    float fgPctHome;    // 4 bytes
-    float ftPctHome;    // 4 bytes
-    float fg3PctHome;   // 4 bytes
-    int astHome;        // 4 bytes
-    int rebHome;        // 4 bytes
-    bool homeTeamWins;  // 1 byte
-    int datablockId;    // 4 bytes
-    int recordId;       // 4 bytes
-
-    // Record Offset from the file
-    // This will allow to access to the record at O(1) time when the record block is loaded
-    std::streampos fileOffset;  // 136 bytes
-}; // Total: 177 bytes (but after padding and alignment is 184 bytes)
+    int gameDate;
+    int teamId;
+    int ptsHome;
+    float fgPctHome;
+    float ftPctHome;
+    float fg3PctHome;
+    int astHome;
+    int rebHome;
+    bool homeTeamWins;
+    uint32_t recordId;
+};
 
 class Storage {
 public:
-    // Constructor
-    Storage(const std::string& filename, size_t recordsPerDatablock, const std::string& datablockDir = "datablocks");
-
-
-    // Methods
-    void    ingestData();
-    Record  getRecord(int datablockId, std::streampos fileOffset);
-    void    printStatistics() const;
-    size_t  getTotalRecords() const;
-
+    Storage(const std::string& filename);
+    void ingestData(const std::string& inputFilename);
+    Record getRecord(uint32_t recordId);
+    std::vector<Record> bulkRead(const std::vector<uint32_t>& recordIds);
+    void printStatistics() const;
+    size_t getTotalRecords() const;
     std::vector<Record> getAllRecords() const;
     
-    size_t  getDatablockCount() const;
-
-    std::string getDatablockFilename(int datablockId) const;
-    void getVectorByRecords(int dataBlockId, std::vector<std::streampos> fileOffsets, std::vector<Record> &resultRecords);
+    const std::unordered_map<uint32_t, std::pair<uint32_t, uint32_t>>& getRecordLocations() const {
+        return recordLocations;
+    }
 
 private:
     std::string filename;
-    std::string datablockDir;
-    size_t      totalRecords;
-    size_t      recordsPerDatablock;
-    std::vector<Record> records;  // This will store metadata for all records
-    size_t      datablockCount;
-
-    void createDatablock(const std::vector<Record>& blockRecords, int datablockId);
-    void loadMetadata();
+    std::vector<Datablock> datablocks;
+    std::unordered_map<uint32_t, std::pair<uint32_t, uint32_t>> recordLocations; // recordId -> {datablockId, offset}
+    uint32_t totalRecords;
     
+    void createDatablock(const std::vector<Record>& records);
+    void saveDatablocks();
+    void loadDatablocks();
+    std::vector<char> serializeRecord(const Record& record) const;
+    Record deserializeRecord(const std::vector<char>& data) const;
 };
 
 #endif // STORAGE_H

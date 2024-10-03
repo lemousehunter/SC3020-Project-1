@@ -1,307 +1,184 @@
 #include "Storage.h"
 #include <fstream>
-#include <sstream>
 #include <iostream>
-#include <stdexcept>
-#include <filesystem>
+#include <sstream>
+#include <algorithm>
 
-
-// Constructor
-Storage::Storage(const std::string& filename, size_t numRecordsPerDatablock, const std::string& datablockDir)
-    : filename(filename), datablockDir(datablockDir), totalRecords(0), recordsPerDatablock(0), datablockCount(0) {
-    
-    recordsPerDatablock = numRecordsPerDatablock;
-
-    // Print out the message
-    std::cout << "Storage constructor called with filename: " << filename << " and datablockDir: " << datablockDir << std::endl;
-    
-    /*
-    If the directory to store the data block does not exist:
-        create a new directory
-        ingestData()
-    else:
-        counting the exist data block existed in the directory and assigning it to 'datablockCount'
-        loadMetadata() from existed blocks
-
-    Because the data is loaded ALL in at the time so if the datablock directory does not exist means that there is no data
-    or else it has been loaded before and we just load the metadata.
-    */
-    
-    if (!std::filesystem::exists(datablockDir)) {
-        std::cout << "Datablock directory does not exist. Creating directory and ingesting data." << std::endl;
-        std::filesystem::create_directory(datablockDir);
-        ingestData();
-    } else {
-        std::cout << "Datablock directory exists. Counting existing datablock files." << std::endl;
-        for (const auto& entry : std::filesystem::directory_iterator(datablockDir)) {
-            if (entry.is_regular_file() && entry.path().extension() == ".dat") {
-                datablockCount++;
-            }
-        }
-        std::cout << "Found " << datablockCount << " existing datablock files." << std::endl;
-        
-        // Load metadata from existing datablocks
-        loadMetadata();
+Storage::Storage(const std::string& filename) : filename(filename), totalRecords(0) {
+    std::ifstream file(filename, std::ios::binary);
+    if (file.good()) {
+        loadDatablocks();
     }
 }
 
-bool compare_FG_PCT_home(const Record& record1, const Record& record2){
-    return record1.fgPctHome < record2.fgPctHome;
-}
-
-void Storage::ingestData() {
-    std::cout << "Starting data ingestion from file: " << filename << std::endl;
-    std::ifstream file(filename);
-    if (!file.is_open()) {
-        throw std::runtime_error("Unable to open file: " + filename);
+void Storage::ingestData(const std::string& inputFilename) {
+    std::ifstream inputFile(inputFilename);
+    if (!inputFile.is_open()) {
+        throw std::runtime_error("Unable to open input file: " + inputFilename);
     }
 
     std::string line;
-    std::getline(file, line); // Skip header
-    std::cout << "Skipped header line: " << line << std::endl;
+    std::getline(inputFile, line); // Skip header
 
+    std::vector<Record> records;
+    uint32_t recordId = 0;
 
-    /*
-    The idea of this initialization for the 'fileRecords' is to load all the data into 1 vector
-    and sort it with 'FG_PCT_home' column in the file so that we can create a correct 'datablockId'
-    in the correct sorted manner.
-    */
-    std::vector<Record> fileRecords;  // A vector of records in the original file
-
-
-    std::vector<Record> blockRecords; // A vector of records in the Block
-
-    int datablockId = 0;
-    int recordId = 0;
-
-    std::cout << "Ingesting data..." << std::endl;
-
-    while (std::getline(file, line)) {
-        std::istringstream iss(line);  // Initialize an input string stream called 'iss' that is assigned with value of 'line'
+    while (std::getline(inputFile, line)) {
+        std::istringstream iss(line);
         std::string token;
         Record record;
 
-        // TODO: These 2 line2 will affect the TUAN's CODE
-        record.datablockId = datablockId;
-        record.recordId = recordId;
+        record.recordId = recordId++;
 
-        // Parse the record fields
-        
-        // Date Str
         std::getline(iss, token, '\t');
-        token.erase(std::remove(token.begin(), token.end(), '/'), token.end()); // remove '/'
-        record.gameDate = std::stoi(token); // convert to int
+        token.erase(std::remove(token.begin(), token.end(), '/'), token.end());
+        record.gameDate = std::stoi(token);
 
-        // TeamID str
         std::getline(iss, token, '\t');
-        record.teamId = std::stoi(token); // convert to int
-        
-        // PTS_HOME
+        record.teamId = std::stoi(token);
+
         std::getline(iss, token, '\t');
-        record.ptsHome = token.empty() ? 0 : std::stoi(token); // Convert to int
+        record.ptsHome = token.empty() ? 0 : std::stoi(token);
 
-
-        // FG_PCT_Home
         std::getline(iss, token, '\t');
-        record.fgPctHome = token.empty() ? 0.0f : std::stof(token); // Convert to float
+        record.fgPctHome = token.empty() ? 0.0f : std::stof(token);
 
-        // FT_PCT_Home
         std::getline(iss, token, '\t');
-        record.ftPctHome = token.empty() ? 0.0f : std::stof(token); // Convert to float
+        record.ftPctHome = token.empty() ? 0.0f : std::stof(token);
 
-
-        // FG3_PCT_HOME
         std::getline(iss, token, '\t');
-        record.fg3PctHome = token.empty() ? 0.0f : std::stof(token); // Convert to float
+        record.fg3PctHome = token.empty() ? 0.0f : std::stof(token);
 
-
-        // AST_HOME
         std::getline(iss, token, '\t');
-        record.astHome = token.empty() ? 0 : std::stoi(token); // Convert to int
+        record.astHome = token.empty() ? 0 : std::stoi(token);
 
-
-        // REB_HOME
         std::getline(iss, token, '\t');
-        record.rebHome = token.empty() ? 0 : std::stoi(token); // Convert to int
+        record.rebHome = token.empty() ? 0 : std::stoi(token);
 
-        // HOME_TEAM_WINS
         std::getline(iss, token, '\t');
-        record.homeTeamWins = token == "1"; // Convert to bool
+        record.homeTeamWins = token == "1";
 
+        records.push_back(record);
 
-        fileRecords.push_back(record);
-
-
-    // This is the previous version
-    // START OLD CODE PART
-    
-        // blockRecords.push_back(record); // Push the record into the block
-        // records.push_back(record);      // Store metadata
-        // totalRecords++;
-        // recordId++;
-
-        // if (blockRecords.size() == recordsPerDatablock) {
-        //     createDatablock(blockRecords, datablockId);
-        //     blockRecords.clear();
-        //     datablockId++;
-        //     recordId = 0; // This could be remove due to redundancy ??? I think?
-        //     // When we remove the this reset line it fail to correctly calculate the Average of FG3_PCT_home
-        // }
-    // END OLD CODE PART
-    }
-
-    /*
-    Some comment on my next part of the code:
-    This code still run fine UNTIL the average part it act diffectly when we try to calculate the
-    average of the FG3_PCT_home it return all 0. 
-    
-
-
-    */
-
-    // START TUAN'S CODE
-    // Sorting out the record based on the FG_PCT_home
-    std::cout << "Sorting the record based on FG_PCT_home..." << std::endl;
-    sort(fileRecords.begin(), fileRecords.end(), compare_FG_PCT_home);
-
-    std::cout << "Records after sorting:" << std::endl;
-    // for (const auto& record : fileRecords) {
-    //     std::cout << "RecordID: " << record.recordId << ", FG_PCT_home: " << record.fgPctHome << std::endl;
-    // }
-    // Pushing all sorted records into the blocks
-
-    float min_this_block = 1000;
-    for (Record sorted_record: fileRecords){
-
-        // TODO: this one could be the potential value used for the block id
-        // if (sorted_record.fgPctHome < min_this_block){
-        //     min_this_block = sorted_record.fgPctHome;
-        // } 
-
-        //std::cout << sorted_record.fgPctHome << std::endl;
-
-
-
-        // TODO: This line will overwrite the given dataBlockId given above
-        sorted_record.datablockId = datablockId;
-        sorted_record.recordId = recordId;
-
-
-        blockRecords.push_back(sorted_record);
-        records.push_back(sorted_record);
-        totalRecords++;
-        recordId++;
-
-        if (blockRecords.size() == recordsPerDatablock) { // limits number of records to predefined recordsPerDatablock
-            createDatablock(blockRecords, datablockId);
-            blockRecords.clear();
-            datablockId++;
-            recordId = 0; // Why do we have to reset the recordId every time the block is created: This is for reading from the datablock files after creation
+        if (records.size() == 100) { // Adjust this number as needed
+            createDatablock(records);
+            records.clear();
         }
     }
-    // END TUAN'S CODE
 
-    if (!blockRecords.empty()) {
-        createDatablock(blockRecords, datablockId);
+    // Sort records based on fg_pct_home
+    std::sort(records.begin(), records.end(), [](const Record& a, const Record& b) {
+        return a.fgPctHome < b.fgPctHome;
+    });
+
+
+
+    if (!records.empty()) {
+        createDatablock(records);
     }
 
-    datablockCount = datablockId + 1;
-    std::cout << "Finished data ingestion. Total records: " << totalRecords << ", Datablocks created: " << datablockCount << std::endl;
+    totalRecords = recordId;
+    saveDatablocks();
 }
 
-
-void Storage::createDatablock(const std::vector<Record>& blockRecords, int datablockId) {
+void Storage::createDatablock(const std::vector<Record>& records) {
+    Datablock datablock(datablocks.size());
     
-    std::string datablockFilename = getDatablockFilename(datablockId);
-
-    /*
-    std::ofstream (output file stream)
-    This line basically create an 'ofstream' object named 'datablockFile'
-    */
-    std::ofstream datablockFile(datablockFilename, std::ios::binary);
+    for (const auto& record : records) {
+        std::vector<char> serializedRecord = serializeRecord(record);
+        if (!datablock.addRecord(record.recordId, serializedRecord)) {
+            datablocks.push_back(datablock);
+            datablock = Datablock(datablocks.size());
+            if (!datablock.addRecord(record.recordId, serializedRecord)) {
+                throw std::runtime_error("Record too large for datablock");
+            }
+        }
+        recordLocations[record.recordId] = {datablock.getId(), datablock.getRecordLocations().at(record.recordId)};
+    }
     
-    if (!datablockFile.is_open()) {
-        throw std::runtime_error("Unable to create datablock file: " + datablockFilename);
-    }
-
-    for (const auto& record : blockRecords) {
-        std::streampos fileOffset = datablockFile.tellp();
-
-
-        //std::cout << "Writing record: " << record.recordId << ", File offset: " << fileOffset << std::endl;
-        records[record.datablockId * recordsPerDatablock + record.recordId].fileOffset = fileOffset;
-
-        datablockFile.write(reinterpret_cast<const char*>(&record), sizeof(Record));
-    }
-
-    datablockFile.close();
-    std::cout << "Created datablock file: " << datablockFilename << " with " << blockRecords.size() << " records." << std::endl;
+    datablocks.push_back(datablock);
 }
 
-void Storage::loadMetadata() {
-    std::cout << "Loading metadata from existing datablocks..." << std::endl;
-    records.clear();
+void Storage::saveDatablocks() {
+    std::ofstream file(filename, std::ios::binary | std::ios::trunc);
+    if (!file.is_open()) {
+        throw std::runtime_error("Unable to open file for writing: " + filename);
+    }
+
+    uint32_t datablockCount = datablocks.size();
+    file.write(reinterpret_cast<const char*>(&datablockCount), sizeof(uint32_t));
+
+    for (const auto& datablock : datablocks) {
+        std::vector<char> serializedDatablock = datablock.serialize();
+        uint32_t size = serializedDatablock.size();
+        file.write(reinterpret_cast<const char*>(&size), sizeof(uint32_t));
+        file.write(serializedDatablock.data(), serializedDatablock.size());
+    }
+}
+
+void Storage::loadDatablocks() {
+    std::ifstream file(filename, std::ios::binary);
+    if (!file.is_open()) {
+        throw std::runtime_error("Unable to open file for reading: " + filename);
+    }
+
+    uint32_t datablockCount;
+    file.read(reinterpret_cast<char*>(&datablockCount), sizeof(uint32_t));
+
+    datablocks.clear();
+    recordLocations.clear();
     totalRecords = 0;
 
-    for (int i = 0; i < datablockCount; ++i) {
-        std::string datablockFilename = getDatablockFilename(i);
-        std::ifstream datablockFile(datablockFilename, std::ios::binary);
-        
-        if (!datablockFile.is_open()) {
-            throw std::runtime_error("Unable to open datablock file: " + datablockFilename);
-        }
+    for (uint32_t i = 0; i < datablockCount; ++i) {
+        uint32_t size;
+        file.read(reinterpret_cast<char*>(&size), sizeof(uint32_t));
 
-        Record record;
-        while (datablockFile.read(reinterpret_cast<char*>(&record), sizeof(Record))) {
-            record.datablockId = i;
-            record.recordId = totalRecords % recordsPerDatablock;
-            record.fileOffset = datablockFile.tellg() - std::streampos(sizeof(Record));
-            records.push_back(record);
-            totalRecords++;
-        }
+        std::vector<char> serializedDatablock(size);
+        file.read(serializedDatablock.data(), size);
 
-        datablockFile.close();
+        Datablock datablock = Datablock::deserialize(serializedDatablock);
+        datablocks.push_back(datablock);
+
+        for (const auto& pair : datablock.getRecordLocations()) {
+            recordLocations[pair.first] = {datablock.getId(), pair.second};
+            totalRecords = std::max(totalRecords, pair.first + 1);
+        }
+    }
+}
+
+Record Storage::getRecord(uint32_t recordId) {
+    auto it = recordLocations.find(recordId);
+    if (it == recordLocations.end()) {
+        throw std::runtime_error("Record not found");
     }
 
-    std::cout << "Finished loading metadata. Total records: " << totalRecords << std::endl;
+    uint32_t datablockId = it->second.first;
+    uint32_t offset = it->second.second;
+
+    std::vector<char> serializedRecord = datablocks[datablockId].getRecord(recordId);
+    return deserializeRecord(serializedRecord);
 }
 
-size_t Storage::getDatablockCount() const {
-    return datablockCount;
-}
+std::vector<Record> Storage::bulkRead(const std::vector<uint32_t>& recordIds) {
+    std::vector<Record> result;
+    result.reserve(recordIds.size());
 
-std::string Storage::getDatablockFilename(int datablockId) const {
-    return datablockDir + "/datablock_" + std::to_string(datablockId) + ".dat";
-}
-
-
-Record Storage::getRecord(int datablockId, std::streampos fileOffset) {
-    std::string datablockFilename = datablockDir + "/datablock_" + std::to_string(datablockId) + ".dat";
-    std::ifstream datablockFile(datablockFilename, std::ios::binary);
-    
-    if (!datablockFile.is_open()) {
-        throw std::runtime_error("Unable to open datablock file: " + datablockFilename);
+    for (uint32_t recordId : recordIds) {
+        result.push_back(getRecord(recordId));
     }
 
-    datablockFile.seekg(fileOffset);
-    Record record;
-    datablockFile.read(reinterpret_cast<char*>(&record), sizeof(Record));
-
-    return record;
+    return result;
 }
-
-
 
 void Storage::printStatistics() const {
+    const size_t BLOCK_SIZE = 4096;
+    size_t recordSize = sizeof(Record);
+    size_t maxRecordsPerBlock = BLOCK_SIZE / recordSize;
     std::cout << "----------------- Storage Statistics -----------------" << std::endl;
     std::cout << "Total number of records: " << totalRecords << std::endl;
-    std::cout << "Number of datablocks: " << (totalRecords + recordsPerDatablock - 1) / recordsPerDatablock << std::endl;
-    std::cout << "Records per datablock (pre-defined): " << recordsPerDatablock << std::endl;
-    std::cout << "Size of std::streampos: " << sizeof(std::streampos) << " bytes" << std::endl;
-    std::cout << "Size of record: " << sizeof(Record) << std::endl;
-    std::cout << "Size of int: " << sizeof(int) << std::endl;
-    std::cout << "Size of float: " << sizeof(float) << std::endl;
-    std::cout << "Size of bool: " << sizeof(bool) << std::endl;
+    std::cout << "Number of datablocks: " << datablocks.size() << std::endl;
+    std::cout << "Size of record: " << sizeof(Record) << " bytes" << std::endl;
+    std::cout << "Max Number of Records per Datablock: " << maxRecordsPerBlock << std::endl;
     std::cout << "------------------------------------------------------" << std::endl;
 }
 
@@ -310,24 +187,30 @@ size_t Storage::getTotalRecords() const {
 }
 
 std::vector<Record> Storage::getAllRecords() const {
-    return records;
+    std::vector<Record> allRecords;
+    allRecords.reserve(totalRecords);
+
+    for (const auto& datablock : datablocks) {
+        for (const auto& pair : datablock.getRecordLocations()) {
+            std::vector<char> serializedRecord = datablock.getRecord(pair.first);
+            allRecords.push_back(deserializeRecord(serializedRecord));
+        }
+    }
+
+    return allRecords;
 }
 
-void Storage::getVectorByRecords(int dataBlockId, std::vector<std::streampos> fileOffsets, std::vector<Record> &resultRecords){
-    
+std::vector<char> Storage::serializeRecord(const Record& record) const {
+    std::vector<char> result(sizeof(Record));
+    std::memcpy(result.data(), &record, sizeof(Record));
+    return result;
+}
+
+Record Storage::deserializeRecord(const std::vector<char>& data) const {
+    if (data.size() != sizeof(Record)) {
+        throw std::runtime_error("Invalid record size");
+    }
     Record record;
-    
-    std::string datablockFilename = datablockDir + "/datablock_" + std::to_string(dataBlockId) + ".dat";
-    std::ifstream datablockFile(datablockFilename, std::ios::binary);
-
-    if (!datablockFile.is_open()) {
-        throw std::runtime_error("Unable to open datablock file: " + datablockFilename);
-    }
-
-    for (std::streampos fileOffset: fileOffsets){
-        datablockFile.seekg(fileOffset);
-        datablockFile.read(reinterpret_cast<char*>(&record), sizeof(Record));
-        resultRecords.push_back(record);
-    }
+    std::memcpy(&record, data.data(), sizeof(Record));
+    return record;
 }
-
