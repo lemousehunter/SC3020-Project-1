@@ -376,7 +376,7 @@ SearchResult BPlusTree::rangeSearch(float lower, float upper, Storage& storage) 
     for (std::pair<int, std::vector<std::streampos>> block_offset_result: block_offset_results){
         // 
         // key_of_dict = block_offset_result.first 
-        // Data []
+        // Data [fileoffset, fileoffset, ...]
 
         result.dataBlocksAccessed++;        
         storage.getVectorByRecords(block_offset_result.first, block_offset_results[block_offset_result.first], resulting_records);

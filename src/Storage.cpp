@@ -81,36 +81,52 @@ void Storage::ingestData() {
         std::string token;
         Record record;
 
-
-
         // TODO: These 2 line2 will affect the TUAN's CODE
         record.datablockId = datablockId;
         record.recordId = recordId;
 
         // Parse the record fields
-        std::getline(iss, record.gameDate, '\t');
-        std::getline(iss, record.teamId, '\t');
         
+        // Date Str
         std::getline(iss, token, '\t');
-        record.ptsHome = token.empty() ? 0 : std::stoi(token);
+        token.erase(std::remove(token.begin(), token.end(), '/'), token.end()); // remove '/'
+        record.gameDate = std::stoi(token); // convert to int
 
+        // TeamID str
         std::getline(iss, token, '\t');
-        record.fgPctHome = token.empty() ? 0.0f : std::stof(token);
+        record.teamId = std::stoi(token); // convert to int
+        
+        // PTS_HOME
+        std::getline(iss, token, '\t');
+        record.ptsHome = token.empty() ? 0 : std::stoi(token); // Convert to int
 
-        std::getline(iss, token, '\t');
-        record.ftPctHome = token.empty() ? 0.0f : std::stof(token);
 
+        // FG_PCT_Home
         std::getline(iss, token, '\t');
-        record.fg3PctHome = token.empty() ? 0.0f : std::stof(token);
+        record.fgPctHome = token.empty() ? 0.0f : std::stof(token); // Convert to float
 
+        // FT_PCT_Home
         std::getline(iss, token, '\t');
-        record.astHome = token.empty() ? 0 : std::stoi(token);
+        record.ftPctHome = token.empty() ? 0.0f : std::stof(token); // Convert to float
 
-        std::getline(iss, token, '\t');
-        record.rebHome = token.empty() ? 0 : std::stoi(token);
 
+        // FG3_PCT_HOME
         std::getline(iss, token, '\t');
-        record.homeTeamWins = token == "1";
+        record.fg3PctHome = token.empty() ? 0.0f : std::stof(token); // Convert to float
+
+
+        // AST_HOME
+        std::getline(iss, token, '\t');
+        record.astHome = token.empty() ? 0 : std::stoi(token); // Convert to int
+
+
+        // REB_HOME
+        std::getline(iss, token, '\t');
+        record.rebHome = token.empty() ? 0 : std::stoi(token); // Convert to int
+
+        // HOME_TEAM_WINS
+        std::getline(iss, token, '\t');
+        record.homeTeamWins = token == "1"; // Convert to bool
 
 
         fileRecords.push_back(record);
@@ -281,6 +297,11 @@ void Storage::printStatistics() const {
     std::cout << "Total number of records: " << totalRecords << std::endl;
     std::cout << "Number of datablocks: " << (totalRecords + recordsPerDatablock - 1) / recordsPerDatablock << std::endl;
     std::cout << "Records per datablock (pre-defined): " << recordsPerDatablock << std::endl;
+    std::cout << "Size of std::streampos: " << sizeof(std::streampos) << " bytes" << std::endl;
+    std::cout << "Size of record: " << sizeof(Record) << std::endl;
+    std::cout << "Size of int: " << sizeof(int) << std::endl;
+    std::cout << "Size of float: " << sizeof(float) << std::endl;
+    std::cout << "Size of bool: " << sizeof(bool) << std::endl;
     std::cout << "------------------------------------------------------" << std::endl;
 }
 

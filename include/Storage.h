@@ -8,22 +8,22 @@
 
 struct Record {
     // Record attributes
-    std::string gameDate;
-    std::string teamId;
-    int ptsHome;
-    float fgPctHome;
-    float ftPctHome;
-    float fg3PctHome;
-    int astHome;
-    int rebHome;
-    bool homeTeamWins;
-    int datablockId;
-    int recordId;
+    int gameDate;       // 4 bytes
+    int teamId;         // 4 bytes
+    int ptsHome;        // 4 bytes
+    float fgPctHome;    // 4 bytes
+    float ftPctHome;    // 4 bytes
+    float fg3PctHome;   // 4 bytes
+    int astHome;        // 4 bytes
+    int rebHome;        // 4 bytes
+    bool homeTeamWins;  // 1 byte
+    int datablockId;    // 4 bytes
+    int recordId;       // 4 bytes
 
     // Record Offset from the file
     // This will allow to access to the record at O(1) time when the record block is loaded
-    std::streampos fileOffset;
-};
+    std::streampos fileOffset;  // 136 bytes
+}; // Total: 177 bytes (but after padding and alignment is 184 bytes)
 
 class Storage {
 public:
