@@ -117,19 +117,38 @@ Initially, we faced some discrepancies with the timing (linear search being much
    
 # How to Run
 1. `cd` into the root directory of this git repository
-2. Make Clean
+2. `cd` into the directory corresponding to your Operating System:
+   
+   **For Windows**<br>
+   ```bash
+   cd Windows
+   ```
+   
+   **For Mac/Linux:**<br>
+   ```bash
+   cd Mac
+   ```
+4. Make Clean
    ```bash
    make clean
    ```
-3. Make
+5. Make
    ```bash
    make
    ```
-4. Run the compiled executable file
+6. Run the compiled executable file
    Assuming you are in the root folder of this repository:
+
+   **For Windows:**
+   ```bash
+   bin/bplustree.exe
+   ```
+
+   **For Linux / Mac:**
    ```bash
    bin/bplustree
    ```
+   **Disclaimer:** No tests was run on a Linux machine and hence no guarantees can be made that the code can be executed on Linux machines. 
    
 # Gotchas
 1. You will need to cd to the root directory of this github repository before running the `bin/plustree` unix executable file, otherwise you will get the error `Error: Unable to open file: games.txt`
