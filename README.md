@@ -1,5 +1,5 @@
 # Introduction
-This repository contains the codebase for a disk-based B+ tree index database system. The data is first read from games.txt (if datablocks does not exist) into the storage module, after which datablocks mirroring those of physical datablocks are created, each containing the pre-defined number of records. Following which, the B+ tree index is created if it does not exist. The range search query function allows users to search for records with `fgPctHome` that are between 0.5 to 0.8 (inclusive). Based on our own tests, the results should be as follows:
+This repository contains the codebase for a disk-based B+ tree index database system. The data is first read from games.txt (if datablocks does not exist) into the storage module, after which datablocks mirroring those of physical datablocks are created, each containing the maximum of 149 records. All datablocks are stored in the same database file. Following which, the B+ tree index is created if it does not exist. The range search query function allows users to search for records with `fgPctHome` that are between 0.5 to 0.8 (inclusive). Based on our own tests, the results should be as follows:
 
 ```
 --------------- B+ Tree Search Results ---------------
@@ -7,14 +7,14 @@ Number of index nodes accessed (internal, non-leaf node): 2
 Number of data blocks accessed: 70
 Number of results: 6902
 Average FG3_PCT_home: 0.420801
-Running time: 16816 microseconds
+Running time: 7342 microseconds
 ------------------------------------------------------
 
 ---------------- Linear Search Results ---------------
 Number of data blocks accessed: 267
 Number of results: 6902
 Average FG3_PCT_home: 0.420801
-Running time: 53134 microseconds
+Running time: 28026 microseconds
 ------------------------------------------------------
 ```
 
@@ -23,11 +23,11 @@ For the following B+ Tree:
 ----------------- B+ Tree Statistics -----------------
 Order (maximum number of keys per node): 100
 Height of the tree: 3
-Content of root node (keys): 0.39 0.418 0.436 0.452 0.468 0.486 0.506 
+Content of root node (keys): 0.391 0.418 0.437 0.453 0.469 0.487 0.506 
 B+ Tree Node Count:
-Total nodes: 465
+Total nodes: 461
 Internal nodes: 9
-Leaf nodes: 456
+Leaf nodes: 452
 ------------------------------------------------------
 ```
 
@@ -36,8 +36,50 @@ and Storage system:
 ----------------- Storage Statistics -----------------
 Total number of records: 26651
 Number of datablocks: 267
-Records per datablock (pre-defined): 100
+Size of record: 26 bytes
+Size of record (in memory): 32 bytes
+Size of record (with header): 27 bytes
+Size of datablock: 4096 bytes
+Size of available space in datablock: 4048 bytes
+Max Number of Records per Datablock: 149
 ------------------------------------------------------
+```
+The schema of a datablock stored on disk (in the database file) is as follows:
+```
+──────────────────────────────────────────────────────┐
+│             Datablock Schema (4096 bytes)            │
+╞══════════════════════════════════════════════════════╡
+│Header                                 48 bytes       │
+├────────────────┬─────────────────────────────────────┤
+│id              │      unsigned short  2  bytes       │
+│maxSize         │      unsigned short  2  bytes       │
+│currentSize     │      unsigned short  2  bytes       │
+│recordCount     │      unsigned short  2  bytes       │
+│recordLocations │      unordered map   40 bytes       │
+╞════════════════╧═════════════════════════════════════╡
+│Record                                 1  bytes       │
+╞══════════════════════════════════════════════════════╡
+│Record Header                          1  bytes       │
+├────────────────┬─────────────────────────────────────┤
+│size            │      int             1  bytes       │
+╞════════════════╪═════════════════════════════════════╡
+│gameDate        │      int             4  bytes       │
+│teamId          │      int             4  bytes       │
+│ptsHome         │      unsigned char   1  bytes       │
+│fgPctHome       │      float           4  bytes       │
+│ftPctHome       │      float           4  bytes       │
+│fg3PctHome      │      float           4  bytes       │
+│astHome         │      unsigned char   1  bytes       │
+│rebHome         │      unsigned char   1  bytes       │
+│homeTeamWins    │      unsigned short  1  bytes       │
+│recordId        │      unsigned short  2  bytes       │
+╞════════════════╧═════════════════════════════════════╡
+│                          ...                         │
+│                          ...                         │
+│                      Other Records                   │
+│                          ...                         │
+│                          ...                         │
+└──────────────────────────────────────────────────────┘
 ```
 
 Initially, we faced some discrepancies with the timing (linear search being much faster than B+ tree search), which should not be the case. After some investigations, we found out that this was because of the extra time taken by the file `seekg()` and `read()` operations that B+ tree used but linear search did not, as our original implementation of linear search loaded the entire datablock into memory instead of reading it by offsets like B+ tree search was.
