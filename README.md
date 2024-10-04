@@ -46,7 +46,7 @@ Max Number of Records per Datablock: 149
 ```
 The schema of a datablock stored on disk (in the database file) is as follows:
 ```
-──────────────────────────────────────────────────────┐
+┌──────────────────────────────────────────────────────┐
 │             Datablock Schema (4096 bytes)            │
 ╞══════════════════════════════════════════════════════╡
 │Header                                 48 bytes       │
