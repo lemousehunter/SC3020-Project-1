@@ -39,54 +39,60 @@ void Datablock::printSchema() const {
     Record record;
 
     auto print_line = [&](const std::string& left, const std::string& middle, const std::string& right) {
-        oss << left << std::string(61, *HORIZONTAL) << right << '\n';
+        oss << left << std::string(62, *HORIZONTAL) << right << '\n';
     };
 
     auto print_row = [&](const std::string& label, const std::string& value, size_t bytes) {
         oss << VERTICAL << ' ' << std::left << std::setw(14) << label
             << VERTICAL << ' ' << std::left << std::setw(31) << value
-            << std::right << std::setw(5) << bytes << "  bytes " << VERTICAL << '\n';
+            << std::right << std::setw(5) << bytes << "  bytes  " << VERTICAL << '\n';
     };
 
     auto print_row_long = [&](const std::string& label, const std::string& value, size_t bytes) {
         oss << VERTICAL << ' ' << std::left << std::setw(14) << label
             << VERTICAL << ' ' << std::left << std::setw(31) << value
-            << std::right << std::setw(5) << bytes << " bytes " << VERTICAL << '\n';
+            << std::right << std::setw(5) << bytes << " bytes  " << VERTICAL << '\n';
+    };
+
+    auto print_row_long_short = [&](const std::string& label, const std::string& value, size_t bytes) {
+        oss << VERTICAL << ' ' << std::left << std::setw(14) << label
+            << VERTICAL << ' ' << std::left << std::setw(31) << ' ' << value
+            << std::right << std::setw(5) << bytes << " bytes  " << VERTICAL << '\n';
     };
 
     print_line(TOP_LEFT, T_DOWN, TOP_RIGHT);
-    oss << VERTICAL << "                 Datablock Schema (" << BLOCK_SIZE << " bytes)               " << VERTICAL << '\n';
+    oss << VERTICAL << "                 Datablock Schema (" << BLOCK_SIZE << " bytes)                " << VERTICAL << '\n';
     print_line(T_RIGHT, CROSS, T_LEFT);
-    print_row_long("Header ", "", 4 * sizeof(uint16_t) + sizeof(header.recordLocations));
+    print_row_long_short("Header   ", " ", 4 * sizeof(uint16_t) + sizeof(header.recordLocations));
     print_line(T_RIGHT, CROSS, T_LEFT);
-    print_row("id ", type_name<decltype(header.id)>(), sizeof(uint16_t));
-    print_row("maxSize ", type_name<decltype(header.maxSize)>(), sizeof(uint16_t));
-    print_row("currentSize ", type_name<decltype(header.currentSize)>(), sizeof(uint16_t));
-    print_row("recordCount ", type_name<decltype(header.recordCount)>(), sizeof(uint16_t));
+    print_row("id   ", type_name<decltype(header.id)>(), sizeof(uint16_t));
+    print_row("maxSize  ", type_name<decltype(header.maxSize)>(), sizeof(uint16_t));
+    print_row("currentSize  ", type_name<decltype(header.currentSize)>(), sizeof(uint16_t));
+    print_row("recordCount  ", type_name<decltype(header.recordCount)>(), sizeof(uint16_t));
     print_row_long("recordLocations", "unordered map", sizeof(header.recordLocations));
     print_line(T_RIGHT, CROSS, T_LEFT);
-    print_row("Record ", "", sizeof(size));
+    print_row("Record  ", "", sizeof(size));
     print_line(T_RIGHT, CROSS, T_LEFT);
     print_row("Record Header ", "", sizeof(size));
     print_line(T_RIGHT, CROSS, T_LEFT);
-    print_row("size ", type_name<decltype(record.gameDate)>(), sizeof(size));
+    print_row("size  ", type_name<decltype(record.gameDate)>(), sizeof(size));
     print_line(T_RIGHT, CROSS, T_LEFT);
-    print_row("gameDate ", type_name<decltype(record.gameDate)>(), sizeof(record.gameDate));
-    print_row("teamId ", type_name<decltype(record.teamId)>(), sizeof(record.teamId));
-    print_row("ptsHome ", type_name<decltype(record.ptsHome)>(), sizeof(record.ptsHome));
-    print_row("fgPctHome ", type_name<decltype(record.fgPctHome)>(), sizeof(record.fgPctHome));
-    print_row("ftPctHome ", type_name<decltype(record.ftPctHome)>(), sizeof(record.ftPctHome));
-    print_row("fg3PctHome ", type_name<decltype(record.fg3PctHome)>(), sizeof(record.fg3PctHome));
-    print_row("astHome ", type_name<decltype(record.astHome)>(), sizeof(record.astHome));
-    print_row("rebHome ", type_name<decltype(record.rebHome)>(), sizeof(record.rebHome));
-    print_row("homeTeamWins ", type_name<decltype(record.homeTeamWins)>(), sizeof(record.homeTeamWins));
-    print_row("recordId ", type_name<decltype(record.recordId)>(), sizeof(record.recordId));
+    print_row("gameDate  ", type_name<decltype(record.gameDate)>(), sizeof(record.gameDate));
+    print_row("teamId  ", type_name<decltype(record.teamId)>(), sizeof(record.teamId));
+    print_row("ptsHome  ", type_name<decltype(record.ptsHome)>(), sizeof(record.ptsHome));
+    print_row("fgPctHome  ", type_name<decltype(record.fgPctHome)>(), sizeof(record.fgPctHome));
+    print_row("ftPctHome  ", type_name<decltype(record.ftPctHome)>(), sizeof(record.ftPctHome));
+    print_row("fg3PctHome  ", type_name<decltype(record.fg3PctHome)>(), sizeof(record.fg3PctHome));
+    print_row("astHome  ", type_name<decltype(record.astHome)>(), sizeof(record.astHome));
+    print_row("rebHome  ", type_name<decltype(record.rebHome)>(), sizeof(record.rebHome));
+    print_row("homeTeamWins  ", type_name<decltype(record.homeTeamWins)>(), sizeof(record.homeTeamWins));
+    print_row("recordId  ", type_name<decltype(record.recordId)>(), sizeof(record.recordId));
     print_line(T_RIGHT, CROSS, T_LEFT);
-    oss << VERTICAL << "                            ...                              " << VERTICAL << '\n';
-    oss << VERTICAL << "                            ...                              " << VERTICAL << '\n';
-    oss << VERTICAL << "                        Other Records                        " << VERTICAL << '\n';
-    oss << VERTICAL << "                            ...                              " << VERTICAL << '\n';
-    oss << VERTICAL << "                            ...                              " << VERTICAL << '\n';
+    oss << VERTICAL << "                            ...                               " << VERTICAL << '\n';
+    oss << VERTICAL << "                            ...                               " << VERTICAL << '\n';
+    oss << VERTICAL << "                        Other Records                         " << VERTICAL << '\n';
+    oss << VERTICAL << "                            ...                               " << VERTICAL << '\n';
+    oss << VERTICAL << "                            ...                               " << VERTICAL << '\n';
     print_line(BOTTOM_LEFT, T_UP, BOTTOM_RIGHT);
 
     std::cout << oss.str() << std::endl;
