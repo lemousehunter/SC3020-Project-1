@@ -6,6 +6,22 @@
 #include <set>
 #include <unordered_map>
 
+
+bool compareRecordPairs(const std::pair<float, uint32_t>& a, const std::pair<float, uint32_t>& b) {
+    
+    // First we compare the key
+    if (a.first != b.first) {
+        return a.first < b.first;
+    }
+    // If keys are equal, compare datablockId first, then fileOffset
+    // if (a.second.datablockId != b.second.datablockId) {
+    //     return a.second.datablockId < b.second.datablockId;
+    // }
+    return a.second < b.second;
+}
+
+
+
 BPlusTree::BPlusTree(int order, const std::string& indexFilename) 
     : order(order), indexFilename(indexFilename), root(nullptr) {}
 
@@ -18,6 +34,19 @@ void BPlusTree::buildFromStorage(const Storage& storage) {
     int count = 0;
     for (const auto& record : records) {
         try {
+
+            // START TUAN's CODE
+
+            // int temp;
+            // std::shared_ptr<BPlusTreeNode> temp_leaf = findLeaf(record.fgPctHome, temp);
+            // if (root != nullptr){
+            //     if (std::find(temp_leaf->keys.begin(), temp_leaf->keys.end(), record.fgPctHome) != temp_leaf->keys.end()){
+            //         continue;
+            //     }
+            // }
+
+            // END TUAN's CODE
+
             insert(record.fgPctHome, record.recordId);
             count++;
             if (count % 1000 == 0) {
@@ -42,7 +71,11 @@ void BPlusTree::buildFromStorage(const Storage& storage) {
 void BPlusTree::insert(float key, uint32_t recordId) {
     if (!root) {
         root = std::make_shared<BPlusTreeNode>(true);
+
+
         root->keys.push_back(key);
+
+
         root->recordIds.push_back(recordId);
         return;
     }
@@ -74,14 +107,19 @@ void BPlusTree::splitLeafNode(std::shared_ptr<BPlusTreeNode> leaf, float newKey,
     
     std::vector<float> tempKeys = leaf->keys;
     std::vector<uint32_t> tempRecordIds = leaf->recordIds;
+
     tempKeys.push_back(newKey);
     tempRecordIds.push_back(recordId);
 
+    //                     key   recordId
     std::vector<std::pair<float, uint32_t>> pairs;
+
+
     for (size_t i = 0; i < tempKeys.size(); ++i) {
         pairs.emplace_back(tempKeys[i], tempRecordIds[i]);
     }
-    std::sort(pairs.begin(), pairs.end());
+
+    std::sort(pairs.begin(), pairs.end(), compareRecordPairs);
 
     int mid = (order + 1) / 2;
     leaf->keys.clear();
@@ -106,34 +144,63 @@ void BPlusTree::splitLeafNode(std::shared_ptr<BPlusTreeNode> leaf, float newKey,
 }
 
 void BPlusTree::insertIntoParent(std::shared_ptr<BPlusTreeNode> leftChild, float key, std::shared_ptr<BPlusTreeNode> rightChild) {
-    if (leftChild == root) {
+    try{
+        if (leftChild == root) {
         auto newRoot = std::make_shared<BPlusTreeNode>(false);
+
         newRoot->keys.push_back(key);
         newRoot->children.push_back(leftChild);
         newRoot->children.push_back(rightChild);
+
+
         root = newRoot;
+
         leftChild->parent = newRoot;
+        // TODO: Debug
+
+        // std::cout << "DEBUG: in 'insertIntoParrent', leftChild's parrent address: " << rightChild->parent.lock() << std::endl;
+        
+        //TODO: Debugging
+        // std::cout << "DEBUG: Left child's parrent address " << leftChild->parent.lock() << std::endl;
+        
+
         rightChild->parent = newRoot;
+
+
+        // TODO:Debug
+        //std::cout << "DEBUG: Right child's parrent address " << leftChild->parent.lock() << std::endl;
         return;
-    }
+        }
 
-    auto parent = leftChild->parent.lock();
-    if (!parent) {
-        throw std::runtime_error("Parent node is null");
-    }
+        auto parent = leftChild->parent.lock();
 
-    auto it = std::find(parent->children.begin(), parent->children.end(), leftChild);
-    if (it == parent->children.end()) {
-        throw std::runtime_error("Left child not found in parent's children");
-    }
-    int index = std::distance(parent->children.begin(), it);
 
-    if (parent->keys.size() < order - 1) {
-        parent->keys.insert(parent->keys.begin() + index, key);
-        parent->children.insert(parent->children.begin() + index + 1, rightChild);
-        rightChild->parent = parent;
-    } else {
-        splitNonLeafNode(parent, index, key, rightChild);
+
+        if (!parent) {
+            throw std::runtime_error("Parent node is null");
+        }
+
+        auto it = std::find(parent->children.begin(), parent->children.end(), leftChild);
+        if (it == parent->children.end()) {
+            throw std::runtime_error("Left child not found in parent's children");
+        }
+        int index = std::distance(parent->children.begin(), it);
+
+        if (parent->keys.size() < order - 1) {
+            parent->keys.insert(parent->keys.begin() + index, key);
+            parent->children.insert(parent->children.begin() + index + 1, rightChild);
+            rightChild->parent = parent;
+
+            // TODO: Debug
+
+            // std::cout << "DEBUG: in 'insertIntoParrent', rightChild's parrent address: " << rightChild->parent.lock() << std::endl;
+
+        } else {
+            splitNonLeafNode(parent, index, key, rightChild);
+        }
+    } catch (const std::exception& e){
+        std::cerr << "Error in insertIntoParent: " << e.what() << std::endl;
+        throw;
     }
 }
 
@@ -156,6 +223,10 @@ void BPlusTree::splitNonLeafNode(std::shared_ptr<BPlusTreeNode> node, int index,
 
     for (auto& child : newNode->children) {
         child->parent = newNode;
+
+        // TODO: Debug
+
+        // std::cout << "DEBUG: in 'splitNonLeafNode', child's parent address " << child->parent.lock() << std::endl;
     }
 
     insertIntoParent(node, promotedKey, newNode);
@@ -177,14 +248,18 @@ SearchResult BPlusTree::rangeSearch(float lower, float upper, Storage& storage) 
     if (!root) return result;
 
     auto leaf = findLeaf(lower, result.indexNodesAccessed);
-    std::unordered_map<uint32_t, std::vector<uint32_t>> datablockRecordIds;
+    std::unordered_map<uint32_t, std::vector<uint16_t>> datablockRecordIds;
 
-    while (leaf && leaf->keys.front() <= upper) {
+    // START OLD VERSION
+
+
+    while (leaf && leaf->keys.front() <= upper) {        
         for (size_t i = 0; i < leaf->keys.size(); ++i) {
+            
             if (leaf->keys[i] > upper) break;
             if (leaf->keys[i] >= lower) {
-                uint32_t recordId = leaf->recordIds[i];
-                uint32_t datablockId = storage.getRecordLocations().at(recordId).first;
+                uint16_t recordId = leaf->recordIds[i];
+                uint16_t datablockId = storage.getRecordLocations().at(recordId).first;
                 datablockRecordIds[datablockId].push_back(recordId);
                 result.numberOfResults++;
             }
@@ -201,13 +276,76 @@ SearchResult BPlusTree::rangeSearch(float lower, float upper, Storage& storage) 
 
     result.found_records = resulting_records;
 
-    if (!resulting_records.empty()) {
-        float totalFG3PctHome = 0.0f;
-        for (const auto& record : resulting_records) {
-            totalFG3PctHome += record.fg3PctHome;
-        }
-        result.avgFG3PctHome = totalFG3PctHome / resulting_records.size();
-    }
+    // END OLD VERSION
+
+
+
+
+
+    // START TUAN's CODE
+
+    // std::vector<Record> recordsInBlock;
+
+    // while (leaf && leaf->keys.front() <= upper) {
+
+    //     for (size_t i = 0; i < leaf->keys.size(); ++i) {
+    //         if (leaf->keys[i] > upper) break;
+    //         if (leaf->keys[i] >= lower) {
+
+    //             uint16_t recordId = leaf->recordIds[i];
+    //             uint16_t datablockId = storage.getRecordLocations().at(recordId).first;
+
+
+    //             bool keep_loop = true;
+                
+    //             while(keep_loop){
+    //                 recordsInBlock = storage.getRecordsWithBlockId(datablockId);
+    //                 result.dataBlocksAccessed++;
+
+    //                 for (Record &record:recordsInBlock){
+
+    //                     std::cout << "cur fgt: " << record.fgPctHome << std::endl;
+
+    //                     if (record.fgPctHome > upper){
+    //                         keep_loop = false;
+    //                         std::cout << "we actually break the loop" << std::endl;
+    //                         break;
+    //                     }
+
+    //                     if (record.fgPctHome >= lower){
+    //                         result.found_records.push_back(record);
+    //                     }
+    //                 }
+
+    //                 recordsInBlock.clear();
+    //                 std::cout << "cur_datablockid: " << datablockId << " block count: " << storage.getDatablockCount() << std::endl;
+    //                 datablockId++;
+
+    //                 if (datablockId > storage.getDatablockCount()){
+    //                     keep_loop = false;
+    //                 }
+    //             }
+                
+                
+    //             result.numberOfResults++;
+    //         }
+    //     }
+
+    //     leaf = leaf->nextLeaf;
+    // }
+
+
+
+
+    // if (!result.found_records.empty()) {
+    //     float totalFG3PctHome = 0.0f;
+    //     for (const auto& record : result.found_records) {
+    //         totalFG3PctHome += record.fg3PctHome;
+    //     }
+    //     result.avgFG3PctHome = totalFG3PctHome / result.found_records.size();
+    // }
+
+    // END TUAN's CODE
 
     return result;
 }
@@ -295,6 +433,9 @@ void BPlusTree::loadFromFile() {
 
             parent->children.push_back(child);
             child->parent = parent;
+
+            // TODO: Debug
+            std::cout << "DEBUG: child's Parrent address: " << child->parent.lock() << std::endl;
 
             if (!child->isLeaf) {
                 queue.push({child, child->keys.size() + 1});
@@ -385,6 +526,16 @@ void BPlusTree::verifyTree() {
             }
             for (const auto& child : node->children) {
                 if (child->parent.lock() != node) {
+
+                    std::cout << "child's parrent address: " << child->parent.lock() << std::endl;
+                    std::cout << "node's address: " << node << std::endl;
+                    std::cout << "children node's keys: ";
+                    for (float key: child->keys){
+                        std::cout << key << " ";
+                    }
+                    std::cout << std::endl;
+
+
                     std::cout << "Error: Child-parent link mismatch" << std::endl;
                 }
                 queue.push(child);

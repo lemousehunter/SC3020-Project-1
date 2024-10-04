@@ -6,6 +6,7 @@ OBJ_DIR = obj
 BIN_DIR = bin
 DATA_BLOCK_DIR = datablocks
 INDEX_FILE = index.dat
+DATA_BASE_FILE = database.dat
 
 SOURCES = $(wildcard $(SRC_DIR)/*.cpp)
 OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
@@ -26,5 +27,6 @@ clean:
 	rm -rf $(OBJ_DIR) $(BIN_DIR)
 	rm -rf $(DATA_BLOCK_DIR)
 	rm -f $(INDEX_FILE)
+	rm -f $(DATA_BASE_FILE)
 
 .PHONY: all clean

@@ -9,38 +9,43 @@
 #include "BPlusTree.h"
 #include <numeric>
 
-void linearSearch(Storage& storage, float lower, float upper, SearchResult& result) {
-    const auto& recordLocations = storage.getRecordLocations();
-    std::unordered_map<uint32_t, std::vector<uint32_t>> datablockRecordIds;
 
-    for (const auto& pair : recordLocations) {
-        uint32_t recordId = pair.first;
-        uint32_t datablockId = pair.second.first;
-        
-        Record record = storage.getRecord(recordId);
-        if (record.fgPctHome >= lower && record.fgPctHome <= upper) {
-            datablockRecordIds[datablockId].push_back(recordId);
-            result.numberOfResults++;
-        }
-    }
-
-    result.dataBlocksAccessed = datablockRecordIds.size();
-    
-    std::vector<Record> resulting_records;
-    for (const auto& pair : datablockRecordIds) {
-        auto records = storage.bulkRead(pair.second);
-        resulting_records.insert(resulting_records.end(), records.begin(), records.end());
-    }
-
-    result.found_records = resulting_records;
-
-    if (!resulting_records.empty()) {
+void getAverage(SearchResult& result) {
+    if (!result.found_records.empty()) {
         float totalFG3PctHome = 0.0f;
-        for (const auto& record : resulting_records) {
+        for (const auto& record : result.found_records) {
             totalFG3PctHome += record.fg3PctHome;
         }
-        result.avgFG3PctHome = totalFG3PctHome / resulting_records.size();
+        result.avgFG3PctHome = totalFG3PctHome / result.found_records.size();
     }
+}
+
+SearchResult linearSearch(Storage& storage, float lower, float upper) {
+    SearchResult result;
+    auto recordLocationsMap = storage.getRecordLocationsMap();
+    result.dataBlocksAccessed = recordLocationsMap.size();
+
+    std::vector<Record> resulting_records;
+
+    for (const auto& [datablockID, records] : recordLocationsMap) {
+        std::vector<uint16_t> recordIds;
+        for (const auto& [recordId, location] : records) {
+            recordIds.push_back(recordId);
+        }
+        
+        auto ingested_records = storage.bulkRead(recordIds);
+        
+        for (const auto& record : ingested_records) {
+            if (record.fgPctHome >= lower && record.fgPctHome <= upper) {
+                resulting_records.push_back(record);
+            }
+        }
+    }
+
+    result.numberOfResults = resulting_records.size();
+    result.found_records = resulting_records;
+
+    return result;
 }
 
 int main() {
@@ -81,11 +86,12 @@ int main() {
         auto result = bTree.rangeSearch(lower, upper, storage);
         auto end = std::chrono::high_resolution_clock::now();
         auto bpTreeDuration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        getAverage(result);
 
         // Linear search
         start = std::chrono::high_resolution_clock::now();
-        SearchResult linearResult = {0, 0, 0.0f, 0};
-        linearSearch(storage, lower, upper, linearResult);
+        SearchResult linearResult = linearSearch(storage, lower, upper);
+        getAverage(linearResult);
         end = std::chrono::high_resolution_clock::now();
         auto linearDuration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
@@ -129,6 +135,8 @@ int main() {
     } catch (...) {
         std::cerr << "Unknown error occurred" << std::endl;
     }
+
+    
 
     return 0;
 }
