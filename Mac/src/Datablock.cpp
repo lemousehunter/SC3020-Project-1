@@ -15,7 +15,7 @@ void Datablock::printSchema() const {
     std::cout << "┌──────────────────────────────────────────────────────┐" << std::endl;
     std::cout << "│             Datablock Schema (" << BLOCK_SIZE << " bytes)            │" << std::endl;
     std::cout << "╞══════════════════════════════════════════════════════╡" << std::endl;
-    std::cout << "│Header                                 " << unsigned(4 * sizeof(uint16_t)) << "  bytes" << "       │" << std::endl;
+    std::cout << "│Header                                 " << unsigned(4 * sizeof(uint16_t) + sizeof(header.recordLocations)) << " bytes" << "       │" << std::endl;
     std::cout << "├────────────────┬─────────────────────────────────────┤" << std::endl;
     std::cout << "│id              │      " << type_name<decltype(header.id)>() << "  " << unsigned(sizeof(uint16_t)) << "  bytes" << "       │" << std::endl;
     std::cout << "│maxSize         │      " << type_name<decltype(header.maxSize)>() << "  " << unsigned(sizeof(uint16_t)) << "  bytes" << "       │" << std::endl;

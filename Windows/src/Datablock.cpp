@@ -57,7 +57,7 @@ void Datablock::printSchema() const {
     print_line(TOP_LEFT, T_DOWN, TOP_RIGHT);
     oss << VERTICAL << "                 Datablock Schema (" << BLOCK_SIZE << " bytes)               " << VERTICAL << '\n';
     print_line(T_RIGHT, CROSS, T_LEFT);
-    print_row("Header ", "", 4 * sizeof(uint16_t));
+    print_row_long("Header ", "", 4 * sizeof(uint16_t) + sizeof(header.recordLocations));
     print_line(T_RIGHT, CROSS, T_LEFT);
     print_row("id ", type_name<decltype(header.id)>(), sizeof(uint16_t));
     print_row("maxSize ", type_name<decltype(header.maxSize)>(), sizeof(uint16_t));

@@ -279,7 +279,9 @@ void Storage::printStatistics() const {
     std::cout << "Number of datablocks: " << datablocks.size() << std::endl;
     std::cout << "Size of record: " << unsigned(RECORD_SIZE) << " bytes" << std::endl;
     std::cout << "Size of record (in memory): " << sizeof(Record) << " bytes" << std::endl;
+    std::cout << "Size of record (with header): " << unsigned(RECORD_SIZE + 1) << " bytes" << std::endl;
     std::cout << "Size of datablock: " << unsigned(BLOCK_SIZE) << " bytes" << std::endl;
+    std::cout << "Size of available space in datablock: " << unsigned(AVAILABLE_BLOCK_SIZE) << " bytes" << std::endl;
     std::cout << "Max Number of Records per Datablock: " << unsigned(MAX_RECORDS_PER_BLOCK) << std::endl;
     std::cout << "------------------------------------------------------" << std::endl;
 }
