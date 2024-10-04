@@ -1,5 +1,5 @@
 # Introduction
-This repository contains the codebase for a disk-based B+ tree index database system. The data is first read from games.txt (if the database file does not exist) into the storage module, after which datablocks mirroring those of physical datablocks are created, each containing the maximum of 149 records (may vary from system to system depending on how large the `recordLocations` map in the datablock header is. All datablocks are stored in the same database file. Following which, the B+ tree index is created if it does not exist. The range search query function allows users to search for records with `fgPctHome` that are between 0.5 to 0.8 (inclusive). Based on our own tests, the results should be as follows:
+This repository contains the codebase for a disk-based B+ tree index database system. The data is first read from games.txt (if the database file does not exist) into the storage module, after which datablocks mirroring those of physical datablocks are created, each containing the maximum of 149 records (may vary from system to system depending on how large the `recordLocations` map in the datablock header is. All datablocks are stored in the same database file. Following which, the B+ tree index is created if it does not exist. The range search query function allows users to search for records with `fgPctHome` that are between 0.5 to 0.8 (inclusive). Based on our own tests on our own machine, the results should be as follows:
 
 ```
 --------------- B+ Tree Search Results ---------------
@@ -80,6 +80,14 @@ The schema of a datablock stored on disk (in the database file) is as follows:
 │                          ...                         │
 │                          ...                         │
 └──────────────────────────────────────────────────────┘
+```
+
+Compiled with g++:
+```
+Apple clang version 15.0.0 (clang-1500.3.9.4)
+Target: arm64-apple-darwin23.6.0
+Thread model: posix
+InstalledDir: /Library/Developer/CommandLineTools/usr/bin
 ```
 
 Initially, we faced some discrepancies with the timing (linear search being much faster than B+ tree search), which should not be the case. After some investigations, we found out that this was because of the extra time taken by the file `seekg()` and `read()` operations that B+ tree used but linear search did not, as our original implementation of linear search loaded the entire datablock into memory instead of reading it by offsets like B+ tree search was.
