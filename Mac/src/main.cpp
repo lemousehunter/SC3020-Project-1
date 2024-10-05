@@ -62,6 +62,7 @@ int main() {
         Storage storage(DATABASE_FILENAME);
 
         // Check if the database file exists
+        std::cout << "================== Ingesting Records ================ " << std::endl;
         if (!std::filesystem::exists(DATABASE_FILENAME)) {
             std::cout << "Database file not found. Ingesting data..." << std::endl;
             storage.ingestData("games.txt");
@@ -70,6 +71,7 @@ int main() {
         }
 
         // Task 2: B+ tree indexing
+        std::cout << "================= B+ Tree Indexing ================== " << std::endl;
         BPlusTree bTree(BPLUSTREE_ORDER, INDEX_FILENAME);
 
         if (std::filesystem::exists(INDEX_FILENAME)) {
@@ -86,6 +88,7 @@ int main() {
         float lower = 0.5f;
         float upper = 0.8f;
         
+        std::cout << "================== B+ Tree Search =================== " << std::endl;
         std::cout << "\nPerforming range search for " << lower << " <= FG_PCT_home <= " << upper << std::endl;
         
         // B+ Tree search

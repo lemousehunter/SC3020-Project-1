@@ -156,13 +156,6 @@ void BPlusTree::insertIntoParent(std::shared_ptr<BPlusTreeNode> leftChild, float
         root = newRoot;
 
         leftChild->parent = newRoot;
-        // TODO: Debug
-
-        // std::cout << "DEBUG: in 'insertIntoParrent', leftChild's parrent address: " << rightChild->parent.lock() << std::endl;
-        
-        //TODO: Debugging
-        // std::cout << "DEBUG: Left child's parrent address " << leftChild->parent.lock() << std::endl;
-        
 
         rightChild->parent = newRoot;
         return;
@@ -186,10 +179,6 @@ void BPlusTree::insertIntoParent(std::shared_ptr<BPlusTreeNode> leftChild, float
             parent->keys.insert(parent->keys.begin() + index, key);
             parent->children.insert(parent->children.begin() + index + 1, rightChild);
             rightChild->parent = parent;
-
-            // TODO: Debug
-
-            // std::cout << "DEBUG: in 'insertIntoParrent', rightChild's parrent address: " << rightChild->parent.lock() << std::endl;
 
         } else {
             splitNonLeafNode(parent, index, key, rightChild);
@@ -219,10 +208,6 @@ void BPlusTree::splitNonLeafNode(std::shared_ptr<BPlusTreeNode> node, int index,
 
     for (auto& child : newNode->children) {
         child->parent = newNode;
-
-        // TODO: Debug
-
-        // std::cout << "DEBUG: in 'splitNonLeafNode', child's parent address " << child->parent.lock() << std::endl;
     }
 
     insertIntoParent(node, promotedKey, newNode);
@@ -367,9 +352,6 @@ void BPlusTree::loadFromFile() {
 
             parent->children.push_back(child);
             child->parent = parent;
-
-            // TODO: Debug
-            std::cout << "DEBUG: child's Parrent address: " << child->parent.lock() << std::endl;
 
             if (!child->isLeaf) {
                 queue.push({child, child->keys.size() + 1});
