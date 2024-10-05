@@ -130,7 +130,7 @@ void Storage::ingestData(const std::string& inputFilename) {
 
         records.push_back(sorted_record);
 
-        if (records.size() == 100) { // Adjust this number as needed
+        if (records.size() == MAX_RECORDS_PER_BLOCK) { // Adjust this number as needed
             createDatablock(records);
             records.clear();
         }
@@ -242,8 +242,6 @@ void Storage::loadDatablocks() {
 }
 
 Record Storage::getRecord(uint16_t recordId) {
-
-
     // Find the recordID
     auto it = recordLocations.find(recordId);
 
@@ -269,9 +267,9 @@ std::vector<Record> Storage::bulkRead(const std::vector<uint16_t>& recordIds) {
     return result;
 }
 
-void Storage::printStatistics() const {
-    Datablock temp_datablock = Datablock(1);
-    temp_datablock.printSchema();
+void Storage::printStatistics() {
+    auto temp_datablock = getDatablock(1);
+    temp_datablock->printSchema();
 
     std::cout << "----------------- Storage Statistics -----------------" << std::endl;
     std::cout << "Total number of records: " << totalRecords << std::endl;
@@ -280,8 +278,11 @@ void Storage::printStatistics() const {
     std::cout << "Size of record (in memory): " << sizeof(Record) << " bytes" << std::endl;
     std::cout << "Size of record (with header): " << unsigned(RECORD_SIZE + 1) << " bytes" << std::endl;
     std::cout << "Size of datablock: " << unsigned(BLOCK_SIZE) << " bytes" << std::endl;
+    std::cout << "Size of datablock heeader: " << unsigned(BLOCK_HEADER_SIZE) << " bytes" << std::endl;
     std::cout << "Size of available space in datablock: " << unsigned(AVAILABLE_BLOCK_SIZE) << " bytes" << std::endl;
     std::cout << "Max Number of Records per Datablock: " << unsigned(MAX_RECORDS_PER_BLOCK) << std::endl;
+    std::cout << "Max used space in each Datablock: " << unsigned(MAX_USED_SPACE_PER_BLOCK) << " bytes" << std::endl;
+    std::cout << "Unused space in each Datablock: " << unsigned(MIN_FREE_SPACE_PER_BLOCK) << " bytes" << std::endl;
     std::cout << "------------------------------------------------------" << std::endl;
 }
 

@@ -26,7 +26,7 @@ public:
     void ingestData(const std::string& inputFilename);
     Record getRecord(uint16_t recordId);
     std::vector<Record> bulkRead(const std::vector<uint16_t>& recordIds);
-    void printStatistics() const;
+    void printStatistics();
     size_t getTotalRecords() const;
     std::vector<Record> getAllRecords() const;
     uint16_t getDatablockCount() {return datablockCount;}

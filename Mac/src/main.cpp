@@ -21,19 +21,28 @@ void getAverage(SearchResult& result) {
 
 SearchResult linearSearch(Storage& storage, float lower, float upper) {
     SearchResult result;
+
+    // Get the map of datablockID: [(recordID, recordLocation), (recordID, recordLocation)...] for the whole database
     auto recordLocationsMap = storage.getRecordLocationsMap();
+
+    // size of map (=number of keys in map) = number of datablocks accessed
     result.dataBlocksAccessed = recordLocationsMap.size();
 
     std::vector<Record> resulting_records;
 
+    // Iterate over the map
     for (const auto& [datablockID, records] : recordLocationsMap) {
         std::vector<uint16_t> recordIds;
-        for (const auto& [recordId, location] : records) {
+        // For each pair of recordID and recordLocation
+        for (const auto& [recordId, recordLocation] : records) {
+            // Save the recordID into list of record ids for current datablock
             recordIds.push_back(recordId);
         }
         
+        // bulk read all recordIDs for current datablock
         auto ingested_records = storage.bulkRead(recordIds);
         
+        // iterate over ingested records from bulkRead
         for (const auto& record : ingested_records) {
             if (record.fgPctHome >= lower && record.fgPctHome <= upper) {
                 resulting_records.push_back(record);
@@ -50,10 +59,10 @@ SearchResult linearSearch(Storage& storage, float lower, float upper) {
 int main() {
     try {
         // Task 1: Storage component
-        Storage storage("database.dat");
+        Storage storage(DATABASE_FILENAME);
 
         // Check if the database file exists
-        if (!std::filesystem::exists("database.dat")) {
+        if (!std::filesystem::exists(DATABASE_FILENAME)) {
             std::cout << "Database file not found. Ingesting data..." << std::endl;
             storage.ingestData("games.txt");
         } else {
@@ -61,10 +70,9 @@ int main() {
         }
 
         // Task 2: B+ tree indexing
-        int order = 100; // Increased order for better performance
-        BPlusTree bTree(order, "index.dat");
+        BPlusTree bTree(BPLUSTREE_ORDER, INDEX_FILENAME);
 
-        if (std::filesystem::exists("index.dat")) {
+        if (std::filesystem::exists(INDEX_FILENAME)) {
             std::cout << "Loading B+ tree from index file..." << std::endl;
             bTree.loadFromFile();
             bTree.verifyTree();

@@ -248,10 +248,8 @@ SearchResult BPlusTree::rangeSearch(float lower, float upper, Storage& storage) 
     if (!root) return result;
 
     auto leaf = findLeaf(lower, result.indexNodesAccessed);
+    //              datablockID              recordID
     std::unordered_map<uint32_t, std::vector<uint16_t>> datablockRecordIds;
-
-    // START OLD VERSION
-
 
     while (leaf && leaf->keys.front() <= upper) {        
         for (size_t i = 0; i < leaf->keys.size(); ++i) {
@@ -259,7 +257,11 @@ SearchResult BPlusTree::rangeSearch(float lower, float upper, Storage& storage) 
             if (leaf->keys[i] > upper) break;
             if (leaf->keys[i] >= lower) {
                 uint16_t recordId = leaf->recordIds[i];
+
+                // Get Record Location using RecordID
                 uint16_t datablockId = storage.getRecordLocations().at(recordId).first;
+
+                // Save it to unordered map of datablockID: [recordID, recordID...]
                 datablockRecordIds[datablockId].push_back(recordId);
                 result.numberOfResults++;
             }
@@ -268,91 +270,27 @@ SearchResult BPlusTree::rangeSearch(float lower, float upper, Storage& storage) 
     }
 
     std::vector<Record> resulting_records;
+
+    // Iterate over unordered map of datablockID: [recordID, recordID...]
     for (const auto& pair : datablockRecordIds) {
         result.dataBlocksAccessed++;
+
+        // For each datablockID, send the entire array of recordIDs to bulkRead
         auto records = storage.bulkRead(pair.second);
+
+        // Insert all relevant records for each datablock into the result array
         resulting_records.insert(resulting_records.end(), records.begin(), records.end());
     }
 
+    // assign it to the searchResult to be returned
     result.found_records = resulting_records;
-
-    // END OLD VERSION
-
-
-
-
-
-    // START TUAN's CODE
-
-    // std::vector<Record> recordsInBlock;
-
-    // while (leaf && leaf->keys.front() <= upper) {
-
-    //     for (size_t i = 0; i < leaf->keys.size(); ++i) {
-    //         if (leaf->keys[i] > upper) break;
-    //         if (leaf->keys[i] >= lower) {
-
-    //             uint16_t recordId = leaf->recordIds[i];
-    //             uint16_t datablockId = storage.getRecordLocations().at(recordId).first;
-
-
-    //             bool keep_loop = true;
-                
-    //             while(keep_loop){
-    //                 recordsInBlock = storage.getRecordsWithBlockId(datablockId);
-    //                 result.dataBlocksAccessed++;
-
-    //                 for (Record &record:recordsInBlock){
-
-    //                     std::cout << "cur fgt: " << record.fgPctHome << std::endl;
-
-    //                     if (record.fgPctHome > upper){
-    //                         keep_loop = false;
-    //                         std::cout << "we actually break the loop" << std::endl;
-    //                         break;
-    //                     }
-
-    //                     if (record.fgPctHome >= lower){
-    //                         result.found_records.push_back(record);
-    //                     }
-    //                 }
-
-    //                 recordsInBlock.clear();
-    //                 std::cout << "cur_datablockid: " << datablockId << " block count: " << storage.getDatablockCount() << std::endl;
-    //                 datablockId++;
-
-    //                 if (datablockId > storage.getDatablockCount()){
-    //                     keep_loop = false;
-    //                 }
-    //             }
-                
-                
-    //             result.numberOfResults++;
-    //         }
-    //     }
-
-    //     leaf = leaf->nextLeaf;
-    // }
-
-
-
-
-    // if (!result.found_records.empty()) {
-    //     float totalFG3PctHome = 0.0f;
-    //     for (const auto& record : result.found_records) {
-    //         totalFG3PctHome += record.fg3PctHome;
-    //     }
-    //     result.avgFG3PctHome = totalFG3PctHome / result.found_records.size();
-    // }
-
-    // END TUAN's CODE
 
     return result;
 }
 
 void BPlusTree::printStatistics() {
     std::cout << "----------------- B+ Tree Statistics -----------------" << std::endl;
-    std::cout << "Order (maximum number of keys per node): " << order << std::endl;
+    std::cout << "Order (maximum number of keys per node): " << unsigned(order) << std::endl;
     std::cout << "Height of the tree: " << tree_height << std::endl;
     std::cout << "Content of root node (keys): ";
     if (root) {
