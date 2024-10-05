@@ -4,17 +4,17 @@ This repository contains the codebase for a disk-based B+ tree index database sy
 ```
 --------------- B+ Tree Search Results ---------------
 Number of index nodes accessed (internal, non-leaf node): 2
-Number of data blocks accessed: 70
+Number of data blocks accessed: 55
 Number of results: 6902
 Average FG3_PCT_home: 0.420801
-Running time: 7342 microseconds
+Running time: 9400 microseconds
 ------------------------------------------------------
 
 ---------------- Linear Search Results ---------------
-Number of data blocks accessed: 267
+Number of data blocks accessed: 209
 Number of results: 6902
 Average FG3_PCT_home: 0.420801
-Running time: 28026 microseconds
+Running time: 34307 microseconds
 ------------------------------------------------------
 ```
 
@@ -23,11 +23,11 @@ For the following B+ Tree:
 ----------------- B+ Tree Statistics -----------------
 Order (maximum number of keys per node): 100
 Height of the tree: 3
-Content of root node (keys): 0.391 0.418 0.437 0.453 0.469 0.487 0.506 
+Content of root node (keys): 0.393 0.419 0.438 0.453 0.469 0.488 0.506 
 B+ Tree Node Count:
-Total nodes: 461
+Total nodes: 459
 Internal nodes: 9
-Leaf nodes: 452
+Leaf nodes: 450
 ------------------------------------------------------
 ```
 
@@ -35,51 +35,56 @@ and Storage system:
 ```
 ----------------- Storage Statistics -----------------
 Total number of records: 26651
-Number of datablocks: 267
+Number of datablocks: 209
 Size of record: 26 bytes
 Size of record (in memory): 32 bytes
 Size of record (with header): 27 bytes
 Size of datablock: 4096 bytes
-Size of available space in datablock: 4048 bytes
-Max Number of Records per Datablock: 149
+Size of datablock header: 614 bytes
+Size of available space in datablock: 3482 bytes
+Max Number of Records per Datablock: 128
+Max used space in each Datablock: 4070 bytes
+Unused space in each Datablock: 26 bytes
 ------------------------------------------------------
 ```
 The schema of a datablock stored on disk (in the database file) is as follows:
 ```
-┌──────────────────────────────────────────────────────┐
-│             Datablock Schema (4096 bytes)            │
-╞══════════════════════════════════════════════════════╡
-│Header                                 48 bytes       │
-├────────────────┬─────────────────────────────────────┤
-│id              │      unsigned short  2  bytes       │
-│maxSize         │      unsigned short  2  bytes       │
-│currentSize     │      unsigned short  2  bytes       │
-│recordCount     │      unsigned short  2  bytes       │
-│recordLocations │      unordered map   40 bytes       │
-╞════════════════╧═════════════════════════════════════╡
-│Record                                 27 bytes       │
-╞══════════════════════════════════════════════════════╡
-│Record Header                          1  bytes       │
-├────────────────┬─────────────────────────────────────┤
-│size            │      int             1  bytes       │
-╞════════════════╪═════════════════════════════════════╡
-│gameDate        │      int             4  bytes       │
-│teamId          │      int             4  bytes       │
-│ptsHome         │      unsigned char   1  bytes       │
-│fgPctHome       │      float           4  bytes       │
-│ftPctHome       │      float           4  bytes       │
-│fg3PctHome      │      float           4  bytes       │
-│astHome         │      unsigned char   1  bytes       │
-│rebHome         │      unsigned char   1  bytes       │
-│homeTeamWins    │      bool            1  bytes       │
-│recordId        │      unsigned short  2  bytes       │
-╞════════════════╧═════════════════════════════════════╡
-│                          ...                         │
-│                          ...                         │
-│                      Other Records                   │
-│                          ...                         │
-│                          ...                         │
-└──────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────┐
+│             Datablock Schema (4096 bytes)             │
+╞═══════════════════════════════════════════════════════╡
+│Header                                 614 bytes       │
+├────────────────┬──────────────────────────────────────┤
+│id              │      unsigned short  2   bytes       │
+│maxSize         │      unsigned short  2   bytes       │
+│currentSize     │      unsigned short  2   bytes       │
+│recordCount     │      unsigned short  2   bytes       │
+│recordLocations │      unordered map   606 bytes       │
+╞════════════════╧══════════════════════════════════════╡
+│Record                                 27  bytes       │
+╞═══════════════════════════════════════════════════════╡
+│Record Header                          1   bytes       │
+├────────────────┬──────────────────────────────────────┤
+│size            │      int             1   bytes       │
+╞════════════════╪══════════════════════════════════════╡
+│gameDate        │      int             4   bytes       │
+│teamId          │      int             4   bytes       │
+│ptsHome         │      unsigned char   1   bytes       │
+│fgPctHome       │      float           4   bytes       │
+│ftPctHome       │      float           4   bytes       │
+│fg3PctHome      │      float           4   bytes       │
+│astHome         │      unsigned char   1   bytes       │
+│rebHome         │      unsigned char   1   bytes       │
+│homeTeamWins    │      bool            1   bytes       │
+│recordId        │      unsigned short  2   bytes       │
+╞════════════════╧══════════════════════════════════════╡
+│                          ...                          │
+│                          ...                          │
+│                      Other Records                    │
+│                          ...                          │
+│                          ...                          │
+╞═══════════════════════════════════════════════════════╡
+│               Unused Space (26 bytes)                 │
+└───────────────────────────────────────────────────────┘
 ```
 
 Compiled with g++:
