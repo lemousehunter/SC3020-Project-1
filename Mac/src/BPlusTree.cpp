@@ -165,10 +165,6 @@ void BPlusTree::insertIntoParent(std::shared_ptr<BPlusTreeNode> leftChild, float
         
 
         rightChild->parent = newRoot;
-
-
-        // TODO:Debug
-        //std::cout << "DEBUG: Right child's parrent address " << leftChild->parent.lock() << std::endl;
         return;
         }
 

@@ -96,48 +96,22 @@ void Storage::ingestData(const std::string& inputFilename) {
         record.homeTeamWins = token == "1";
 
         fileRecords.push_back(record); // TUAN's added code
-
-
-    // START OLD CODE 1
-
-        // records.push_back(record);
-
-        // if (records.size() == 100) { // Adjust this number as needed
-        //     createDatablock(records);
-        //     records.clear();
-        // }
-
-    // END OLD CODE 1
     }
 
     // Sort records based on fg_pct_home
-    // std::sort(records.begin(), records.end(), compareRecord);
     std::sort(fileRecords.begin(), fileRecords.end(), compareRecord);
-
-    // for (Record sorted_record: fileRecords){
-    //     std::cout << sorted_record.fgPctHome << std::endl;
-    // }
-    
 
     for (Record sorted_record: fileRecords){
 
-        // TODO: this one could be the potential value used for the block id
-        // if (sorted_record.fgPctHome < min_this_block){
-        //     min_this_block = sorted_record.fgPctHome;
-        // } 
-
-        //std::cout << sorted_record.fgPctHome << std::endl;
-
         records.push_back(sorted_record);
 
-        if (records.size() == MAX_RECORDS_PER_BLOCK) { // Adjust this number as needed
+        if (records.size() == MAX_RECORDS_PER_BLOCK) {
             createDatablock(records);
             records.clear();
         }
     }
 
-
-
+    // Store remaining records
     if (!records.empty()) {
         createDatablock(records);
     }
