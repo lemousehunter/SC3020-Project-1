@@ -57,7 +57,7 @@ The schema of a datablock stored on disk (in the database file) is as follows:
 │recordCount     │      unsigned short  2  bytes       │
 │recordLocations │      unordered map   40 bytes       │
 ╞════════════════╧═════════════════════════════════════╡
-│Record                                 1  bytes       │
+│Record                                 27 bytes       │
 ╞══════════════════════════════════════════════════════╡
 │Record Header                          1  bytes       │
 ├────────────────┬─────────────────────────────────────┤
@@ -71,7 +71,7 @@ The schema of a datablock stored on disk (in the database file) is as follows:
 │fg3PctHome      │      float           4  bytes       │
 │astHome         │      unsigned char   1  bytes       │
 │rebHome         │      unsigned char   1  bytes       │
-│homeTeamWins    │      unsigned short  1  bytes       │
+│homeTeamWins    │      bool            1  bytes       │
 │recordId        │      unsigned short  2  bytes       │
 ╞════════════════╧═════════════════════════════════════╡
 │                          ...                         │
