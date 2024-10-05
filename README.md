@@ -127,12 +127,12 @@ Initially, we faced some discrepancies with the timing (linear search being much
    
         f.5. Select <b>OK</b>, and then select <b>OK</b> again in the <b>Environment Variables</b> window to update the `PATH` environment variable. You have to reopen any console windows for the updated `PATH` environment variable to be available<br>
 
-  g. To check if g++, GCC, gdb has been installed correctly, open a new <b>command prompt (CMD)</b> and paste in these lines
-  ```
-  gcc --version
-  g++ --version
-  gdb --version
-  ```
+    g. To check if g++, GCC, gdb has been installed correctly, open a new <b>command prompt (CMD)</b> and paste in these lines
+    ```bash
+    gcc --version
+    g++ --version
+    gdb --version
+    ```
 
 
 
