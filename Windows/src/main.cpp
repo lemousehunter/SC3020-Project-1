@@ -51,21 +51,22 @@ SearchResult linearSearch(Storage& storage, float lower, float upper) {
 int main() {
     try {
         // Task 1: Storage component
-        Storage storage("database.dat");
+        Storage storage(DATABASE_FILENAME);
 
         // Check if the database file exists
-        if (!std::filesystem::exists("database.dat")) {
+        if (!std::filesystem::exists(DATABASE_FILENAME)) {
             std::cout << "Database file not found. Ingesting data..." << std::endl;
-            storage.ingestData("games.txt");
+            storage.ingestData(DATA_FILENAME);
         } else {
             std::cout << "Database file found. Loading existing data..." << std::endl;
+            storage.loadDatablocks();
         }
 
         // Task 2: B+ tree indexing
         int order = 100; // Increased order for better performance
-        BPlusTree bTree(order, "index.dat");
+        BPlusTree bTree(order, INDEX_FILENAME);
 
-        if (std::filesystem::exists("index.dat")) {
+        if (std::filesystem::exists(INDEX_FILENAME)) {
             std::cout << "Loading B+ tree from index file..." << std::endl;
             bTree.loadFromFile();
             bTree.verifyTree();

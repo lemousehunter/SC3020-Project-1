@@ -435,7 +435,7 @@ void BPlusTree::loadFromFile() {
             child->parent = parent;
 
             // TODO: Debug
-            std::cout << "DEBUG: child's Parrent address: " << child->parent.lock() << std::endl;
+            // std::cout << "DEBUG: child's Parrent address: " << child->parent.lock() << std::endl;
 
             if (!child->isLeaf) {
                 queue.push({child, child->keys.size() + 1});

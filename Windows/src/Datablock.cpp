@@ -16,6 +16,7 @@ const char* const TOP_RIGHT = "\u2510";
 const char* const BOTTOM_LEFT = "\u2514";
 const char* const BOTTOM_RIGHT = "\u2518";
 const char* const HORIZONTAL = "-"; //"\u2010";
+const char* const SPECIAL_HORIZONTAL = "="; //"\u2010";
 const char* const VERTICAL = "\u2502";
 const char* const T_DOWN = "\u252C";
 const char* const T_UP = "\u2534";
@@ -39,60 +40,71 @@ void Datablock::printSchema() const {
     Record record;
 
     auto print_line = [&](const std::string& left, const std::string& middle, const std::string& right) {
-        oss << left << std::string(62, *HORIZONTAL) << right << '\n';
+        oss << left << std::string(61, *HORIZONTAL) << right << '\n';
+    };
+
+    auto print_special_line = [&](const std::string& left, const std::string& middle, const std::string& right) {
+        oss << left << std::string(61, *SPECIAL_HORIZONTAL) << right << '\n';
     };
 
     auto print_row = [&](const std::string& label, const std::string& value, size_t bytes) {
-        oss << VERTICAL << ' ' << std::left << std::setw(14) << label
+        oss << VERTICAL <<  std::left << std::setw(14) << label << ' '
             << VERTICAL << ' ' << std::left << std::setw(31) << value
-            << std::right << std::setw(5) << bytes << "  bytes  " << VERTICAL << '\n';
+            << std::right << std::setw(5) << bytes << "  bytes " << VERTICAL << '\n';
     };
 
     auto print_row_long = [&](const std::string& label, const std::string& value, size_t bytes) {
-        oss << VERTICAL << ' ' << std::left << std::setw(14) << label
+        oss << VERTICAL <<  std::left << std::setw(14) << label
             << VERTICAL << ' ' << std::left << std::setw(31) << value
-            << std::right << std::setw(5) << bytes << " bytes  " << VERTICAL << '\n';
+            << std::right << std::setw(5) << bytes << "  bytes " << VERTICAL << '\n';
     };
 
     auto print_row_long_short = [&](const std::string& label, const std::string& value, size_t bytes) {
-        oss << VERTICAL << ' ' << std::left << std::setw(14) << label
-            << VERTICAL << ' ' << std::left << std::setw(31) << ' ' << value
-            << std::right << std::setw(5) << bytes << " bytes  " << VERTICAL << '\n';
+        oss << VERTICAL <<  std::left << std::setw(14) << label << ' '
+            << VERTICAL << ' ' << std::left << std::setw(31) << value
+            << std::right << std::setw(5) << bytes << "  bytes " << VERTICAL << '\n';
     };
 
+
+    uint16_t max_number_of_entries_in_unordered_map = (BLOCK_SIZE - 4 * sizeof(uint16_t)) / (RECORD_SIZE + 1);
+    uint16_t unordered_map_size = sizeof(uint16_t) + max_number_of_entries_in_unordered_map * (2 * sizeof(uint16_t)); // metadata_size + the_upperbound_of_num_of_entries_in_unordered_map * size_per_entry
+    uint8_t record_size = sizeof(record.gameDate) + sizeof(record.teamId) + sizeof(record.ptsHome) + sizeof(record.fgPctHome) + sizeof(record.ftPctHome) + sizeof(record.fg3PctHome) + sizeof(record.astHome) + sizeof(record.rebHome) + sizeof(record.homeTeamWins) + sizeof(record.recordId) + sizeof(size);
+
     print_line(TOP_LEFT, T_DOWN, TOP_RIGHT);
-    oss << VERTICAL << "                 Datablock Schema (" << BLOCK_SIZE << " bytes)                " << VERTICAL << '\n';
+    oss << VERTICAL << "                 Datablock Schema (" << BLOCK_SIZE << " bytes)               " << VERTICAL << '\n';
+    print_special_line(T_RIGHT, CROSS, T_LEFT);
+    print_row_long_short("Header ", "", 4 * sizeof(uint16_t) + unordered_map_size);
     print_line(T_RIGHT, CROSS, T_LEFT);
-    print_row_long_short("Header   ", " ", 4 * sizeof(uint16_t) + sizeof(header.recordLocations));
-    print_line(T_RIGHT, CROSS, T_LEFT);
-    print_row("id   ", type_name<decltype(header.id)>(), sizeof(uint16_t));
-    print_row("maxSize  ", type_name<decltype(header.maxSize)>(), sizeof(uint16_t));
-    print_row("currentSize  ", type_name<decltype(header.currentSize)>(), sizeof(uint16_t));
-    print_row("recordCount  ", type_name<decltype(header.recordCount)>(), sizeof(uint16_t));
-    print_row_long("recordLocations", "unordered map", sizeof(header.recordLocations));
-    print_line(T_RIGHT, CROSS, T_LEFT);
-    print_row("Record  ", "", sizeof(size));
-    print_line(T_RIGHT, CROSS, T_LEFT);
+    print_row("id ", type_name<decltype(header.id)>(), sizeof(uint16_t));
+    print_row("maxSize ", type_name<decltype(header.maxSize)>(), sizeof(uint16_t));
+    print_row("currentSize ", type_name<decltype(header.currentSize)>(), sizeof(uint16_t));
+    print_row("recordCount ", type_name<decltype(header.recordCount)>(), sizeof(uint16_t));
+    print_row_long("recordLocations", "unordered map", unordered_map_size);
+    print_special_line(T_RIGHT, CROSS, T_LEFT);
+    print_row("Record ", "", record_size);
+    print_special_line(T_RIGHT, CROSS, T_LEFT);
     print_row("Record Header ", "", sizeof(size));
     print_line(T_RIGHT, CROSS, T_LEFT);
-    print_row("size  ", type_name<decltype(record.gameDate)>(), sizeof(size));
-    print_line(T_RIGHT, CROSS, T_LEFT);
-    print_row("gameDate  ", type_name<decltype(record.gameDate)>(), sizeof(record.gameDate));
-    print_row("teamId  ", type_name<decltype(record.teamId)>(), sizeof(record.teamId));
-    print_row("ptsHome  ", type_name<decltype(record.ptsHome)>(), sizeof(record.ptsHome));
-    print_row("fgPctHome  ", type_name<decltype(record.fgPctHome)>(), sizeof(record.fgPctHome));
-    print_row("ftPctHome  ", type_name<decltype(record.ftPctHome)>(), sizeof(record.ftPctHome));
-    print_row("fg3PctHome  ", type_name<decltype(record.fg3PctHome)>(), sizeof(record.fg3PctHome));
-    print_row("astHome  ", type_name<decltype(record.astHome)>(), sizeof(record.astHome));
-    print_row("rebHome  ", type_name<decltype(record.rebHome)>(), sizeof(record.rebHome));
-    print_row("homeTeamWins  ", type_name<decltype(record.homeTeamWins)>(), sizeof(record.homeTeamWins));
-    print_row("recordId  ", type_name<decltype(record.recordId)>(), sizeof(record.recordId));
-    print_line(T_RIGHT, CROSS, T_LEFT);
-    oss << VERTICAL << "                            ...                               " << VERTICAL << '\n';
-    oss << VERTICAL << "                            ...                               " << VERTICAL << '\n';
-    oss << VERTICAL << "                        Other Records                         " << VERTICAL << '\n';
-    oss << VERTICAL << "                            ...                               " << VERTICAL << '\n';
-    oss << VERTICAL << "                            ...                               " << VERTICAL << '\n';
+    print_row("size ", type_name<decltype(record.gameDate)>(), sizeof(size));
+    print_special_line(T_RIGHT, CROSS, T_LEFT);
+    print_row("gameDate ", type_name<decltype(record.gameDate)>(), sizeof(record.gameDate));
+    print_row("teamId ", type_name<decltype(record.teamId)>(), sizeof(record.teamId));
+    print_row("ptsHome ", type_name<decltype(record.ptsHome)>(), sizeof(record.ptsHome));
+    print_row("fgPctHome ", type_name<decltype(record.fgPctHome)>(), sizeof(record.fgPctHome));
+    print_row("ftPctHome ", type_name<decltype(record.ftPctHome)>(), sizeof(record.ftPctHome));
+    print_row("fg3PctHome ", type_name<decltype(record.fg3PctHome)>(), sizeof(record.fg3PctHome));
+    print_row("astHome ", type_name<decltype(record.astHome)>(), sizeof(record.astHome));
+    print_row("rebHome ", type_name<decltype(record.rebHome)>(), sizeof(record.rebHome));
+    print_row("homeTeamWins ", type_name<decltype(record.homeTeamWins)>(), sizeof(record.homeTeamWins));
+    print_row("recordId ", type_name<decltype(record.recordId)>(), sizeof(record.recordId));
+    print_special_line(T_RIGHT, CROSS, T_LEFT);
+    oss << VERTICAL << "                            ...                              " << VERTICAL << '\n';
+    oss << VERTICAL << "                            ...                              " << VERTICAL << '\n';
+    oss << VERTICAL << "                     Other Records * " << MAX_RECORDS_PER_BLOCK - 1 << "                     " << VERTICAL << '\n';
+    oss << VERTICAL << "                            ...                              " << VERTICAL << '\n';
+    oss << VERTICAL << "                            ...                              " << VERTICAL << '\n';
+    print_special_line(T_RIGHT, CROSS, T_LEFT);
+    oss << VERTICAL << "                   Unused Space (" << unsigned(MIN_FREE_SPACE_PER_BLOCK) << " bytes)                   " << VERTICAL << '\n';
     print_line(BOTTOM_LEFT, T_UP, BOTTOM_RIGHT);
 
     std::cout << oss.str() << std::endl;

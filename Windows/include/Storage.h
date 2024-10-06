@@ -27,7 +27,7 @@ public:
     void ingestData(const std::string& inputFilename);
     Record getRecord(uint16_t recordId);
     std::vector<Record> bulkRead(const std::vector<uint16_t>& recordIds);
-    void printStatistics() const;
+    void printStatistics();
     size_t getTotalRecords() const;
     std::vector<Record> getAllRecords() const;
     uint16_t getDatablockCount() {return datablockCount;}
@@ -40,6 +40,7 @@ public:
 
     Datablock * getDatablock(uint16_t dataBlockId);
     std::vector<Record> getRecordsWithBlockId(uint16_t datablockId);
+    void loadDatablocks();
 
 private:
     std::string filename;
@@ -53,7 +54,7 @@ private:
     
     void createDatablock(const std::vector<Record>& records);
     void saveDatablocks();
-    void loadDatablocks();
+    
     std::vector<char> serializeRecord(const Record& record) const;
     Record deserializeRecord(const std::vector<char>& data) const;
 };
