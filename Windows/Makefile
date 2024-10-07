@@ -6,7 +6,7 @@ OBJ_DIR = obj
 BIN_DIR = bin
 DATA_BLOCK_DIR = datablocks
 INDEX_FILE = index.dat
-DATA_BASE_FILE = database.dat
+DATA_BASE_FILE = data.db
 
 SOURCES = $(wildcard $(SRC_DIR)/*.cpp)
 OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
